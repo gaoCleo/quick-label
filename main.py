@@ -76,7 +76,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.btn_add_box.clicked.connect(self.set_add_box)
         self.btn_revise.clicked.connect(self.set_revise)
         self.btn_ok.clicked.connect(self.set_flags_false)
-        self.btn_detect_box.clicked.connect(self.delete_obj)
+        self.btn_delete_obj.clicked.connect(self.delete_obj)
 
     ######## btn func ###############
     def set_flags_false(self):
@@ -97,6 +97,14 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
 
     def delete_obj(self):
         my_log('delete an object')
+        list_item = self.lw_objs.currentItem()
+        if list_item is not None:
+            obj_item = self.objs_can.query_obj(list_item)
+            if obj_item is not None:
+                self.objs_can.remove_obj(obj_item)
+                self.objs_list_controller.remove_listitem(list_item)
+                self.canvas_controller.remove_box(obj_item.rect)
+                self.set_flags_false()
 
     def set_revise(self):
         my_log('start revising objects')
