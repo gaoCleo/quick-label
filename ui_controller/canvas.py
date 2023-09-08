@@ -1,17 +1,18 @@
 from typing import List, Tuple
 
-from PyQt5.QtCore import QRectF, Qt, QPoint
-from PyQt5.QtGui import QBrush, QPen, QColor
+from PyQt5.QtCore import QRectF, Qt, QPoint, QPointF
+from PyQt5.QtGui import QBrush, QPen, QColor, QPolygonF
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsPixmapItem, QGraphicsRectItem
 
 from data_objs import GraphImage
-from ui.canvas_ui import BoxGraphicsItem, DrawableView
+from ui.canvas_ui import BoxGraphicsItem, DrawableView, RPolygonGraphicsItem
 
 
 class CanvasController:
     """
     关于坐标的说明：因为我把图片 offset 放在view左上角，所以图片坐标和 view 坐标是一致的
     """
+
     def __init__(self, graphicsView):
         self.img: GraphImage = None
         self.scene: QGraphicsScene = None
@@ -44,6 +45,14 @@ class CanvasController:
         """
         pen = QPen(QColor(*color))
         self.view.draw_box(self.map_view2scene(box_coord), pen)
+
+    def add_mask(self, mask: List[Tuple[float, float]]):
+        points = []
+        for point in mask:
+            points.append(QPointF(point[0], point[1]))
+        polygon = QPolygonF(points)
+        polygon_item = RPolygonGraphicsItem(polygon)
+        self.scene.addItem(polygon_item)
 
     def get_boxes(self) -> List[Tuple]:
         drawn_boxes = [self.map_scene2view(item.rect())

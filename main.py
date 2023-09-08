@@ -56,6 +56,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.canvas_controller = CanvasController(self.view)
         self.canvas_controller.init_ui()
         self.canvas_controller.set_pen(self.color_controller.query_color(self.default_category))
+        # self.canvas_controller.add_mask([(0, 0), (20, 0), (30, 10), (10, 30)])
         # 初始化信息表格
         self.obj_msg_controller = MessageTableController(self.tw_obj_message)
         self.obj_msg_controller.init_ui()
@@ -74,15 +75,19 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.btn_add_category.clicked.connect(self.add_category)
         self.btn_delete_category.clicked.connect(self.delete_category)
         self.btn_add_box.clicked.connect(self.set_add_box)
-        self.btn_revise.clicked.connect(self.set_revise)
+        self.btn_revise_box.clicked.connect(self.set_revise_box)
         self.btn_ok.clicked.connect(self.set_flags_false)
         self.btn_delete_obj.clicked.connect(self.delete_obj)
+        self.btn_revise_mask.clicked.connect(self.set_revise_mask)
+        self.btn_add_mask.clicked.connect(self.set_add_mask)
 
     ######## btn func ###############
     def set_flags_false(self):
         my_log('set all flags to False')
         self.canvas_controller.set_flag(self.view.DRAW_BOX, False)
         self.canvas_controller.set_flag(self.view.REVISE_BOX, False)
+        self.canvas_controller.set_flag(self.view.DRAW_POLYGON, False)
+        self.canvas_controller.set_flag(self.view.REVISE_POLYGON, False)
         self.objs_list_controller.cancel_select()
         self.obj_msg_controller.clear()
         # my_log(f'drawn boxes:{self.canvas_controller.get_boxes()}')
@@ -95,6 +100,16 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.objs_list_controller.cancel_select()
         self.obj_msg_controller.clear()
 
+    def set_add_mask(self):
+        my_log('start add mask')
+        self.canvas_controller.set_flag(key=self.view.DRAW_POLYGON, flag=True)
+        self.objs_list_controller.cancel_select()
+        self.obj_msg_controller.clear()
+
+    def set_revise_mask(self):
+        my_log('start revise mask')
+        self.canvas_controller.set_flag(key=self.view.REVISE_POLYGON, flag=True)
+
     def delete_obj(self):
         my_log('delete an object')
         list_item = self.lw_objs.currentItem()
@@ -106,7 +121,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                 self.canvas_controller.remove_box(obj_item.rect)
                 self.set_flags_false()
 
-    def set_revise(self):
+    def set_revise_box(self):
         my_log('start revising objects')
         self.canvas_controller.set_flag(key=self.view.REVISE_BOX, flag=True)
 

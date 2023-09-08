@@ -21,34 +21,64 @@
        <widget class="DrawableView" name="view"/>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,1,1,0">
+       <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="2,0">
         <item>
-         <widget class="QPushButton" name="btn_add_box">
-          <property name="text">
-           <string>add box</string>
-          </property>
-         </widget>
+         <layout class="QVBoxLayout" name="verticalLayout_7">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <item>
+             <widget class="QPushButton" name="btn_add_box">
+              <property name="text">
+               <string>add box</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_revise_box">
+              <property name="text">
+               <string>revise box</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_8">
+            <item>
+             <widget class="QPushButton" name="btn_add_mask">
+              <property name="text">
+               <string>add mask</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_revise_mask">
+              <property name="text">
+               <string>revise mask</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
         </item>
         <item>
-         <widget class="QPushButton" name="btn_revise">
-          <property name="text">
-           <string>revise box</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btn_delete_obj">
-          <property name="text">
-           <string>delete box</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btn_ok">
-          <property name="text">
-           <string>❤</string>
-          </property>
-         </widget>
+         <layout class="QVBoxLayout" name="verticalLayout_8">
+          <item>
+           <widget class="QPushButton" name="btn_ok">
+            <property name="text">
+             <string>❤</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_delete_obj">
+            <property name="text">
+             <string>✘</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>
