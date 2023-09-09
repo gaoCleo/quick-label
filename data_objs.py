@@ -27,11 +27,16 @@ class GraphImage:
         w_rate = self.img_meta['resized_width'] / self.img_meta['width']
         return x1 * w_rate, y1 * h_rate, x2 * w_rate, y2 * h_rate
 
-    def map_resized2original(self, coord) -> Tuple:
-        x1, y1, x2, y2 = coord
+    def map_resized2original(self, points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        new_points = []
         h_rate = self.img_meta['resized_height'] / self.img_meta['height']
         w_rate = self.img_meta['resized_width'] / self.img_meta['width']
-        return x1 / w_rate, y1 / h_rate, x2 / w_rate, y2 / h_rate
+        for point in points:
+            x, y = point
+            x = x / w_rate
+            y = y / h_rate
+            new_points.append((x, y))
+        return new_points
 
 
 class ObjectItem:
@@ -39,7 +44,8 @@ class ObjectItem:
                  rect: QGraphicsRectItem = None,
                  list_item: QListWidgetItem = None,
                  mask: QGraphicsPolygonItem = None,
-                 original_coord: Tuple = None):
+                 original_coord: Tuple = None,
+                 original_mask: List[Tuple[float, float]] = None):
         self.object_id = obj_id
 
         self.rect: QGraphicsRectItem = rect
@@ -47,6 +53,7 @@ class ObjectItem:
         self.mask: QGraphicsPolygonItem = mask
 
         self.original_coord: Tuple = original_coord
+        self.original_mask: List[Tuple[float, float]] = original_mask
         self.category = category
 
 
@@ -91,9 +98,9 @@ class ObjectItemCan:
         self._objs_mask.clear()
 
     def _query_index(self, obj_attr: Union[ObjectItem, int,
-                                              QGraphicsRectItem,
-                                              QListWidgetItem,
-                                              QGraphicsPolygonItem]) -> Optional[int]:
+                                           QGraphicsRectItem,
+                                           QListWidgetItem,
+                                           QGraphicsPolygonItem]) -> Optional[int]:
         assert type(obj_attr) in [ObjectItem, int, QGraphicsRectItem, QListWidgetItem, QGraphicsPolygonItem]
         try:
             source_list = None
@@ -105,7 +112,7 @@ class ObjectItemCan:
                 source_list = self._objs_rect
             elif type(obj_attr) is QListWidgetItem:
                 source_list = self._objs_listitem
-            elif type(obj_attr) is self._objs_mask:
+            elif type(obj_attr) is QGraphicsPolygonItem:
                 source_list = self._objs_mask
             idx = source_list.index(obj_attr)
             return idx
@@ -118,7 +125,8 @@ class ObjectItemCan:
             return self._objs_id[idx]
         return None
 
-    def query_obj(self, obj_attr: Union[int, QGraphicsRectItem, QListWidgetItem, QGraphicsPolygonItem]) -> Optional[ObjectItem]:
+    def query_obj(self, obj_attr: Union[int, QGraphicsRectItem, QListWidgetItem, QGraphicsPolygonItem]) -> Optional[
+        ObjectItem]:
         idx = self._query_index(obj_attr)
         if idx is not None:
             return self._objs[idx]

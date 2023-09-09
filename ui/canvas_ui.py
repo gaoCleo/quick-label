@@ -16,8 +16,10 @@ class DrawableView(QGraphicsView):
     sig_add_box = pyqtSignal(QGraphicsRectItem)
     sig_remove_box = pyqtSignal(QGraphicsRectItem)
     sig_select_box = pyqtSignal(QGraphicsRectItem)
+
     sig_select_polygon = pyqtSignal(QGraphicsPolygonItem)
     sig_add_polygon = pyqtSignal(QGraphicsPolygonItem)
+    sig_update_polygon = pyqtSignal(QGraphicsPolygonItem)
 
     def __init__(self, *args, **kwargs):
         super(DrawableView, self).__init__(*args, **kwargs)
@@ -130,6 +132,7 @@ class DrawableView(QGraphicsView):
             self.polygon_selected.setPolygon(self.revise_polygon_item.polygon())
             self.scene().removeItem(self.revise_polygon_item)
 
+            self.sig_update_polygon.emit(self.polygon_selected)
             self.revise_polygon_item = None
             self.polygon_selected = None
             self.polygon_selected_pen = None

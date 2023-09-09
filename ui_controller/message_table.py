@@ -45,6 +45,10 @@ class MessageTableController:
     def set_obj_msg(self, obj_item: ObjectItem):
         self._set_box(obj_item.original_coord)
         self._set_category(obj_item.category)
+        if obj_item.original_mask is not None:
+            self._set_mask(obj_item.original_mask)
+        else:
+            self._set_mask('')
 
     def clear(self):
         self._set_box('')

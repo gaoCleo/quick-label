@@ -21,7 +21,7 @@
        <widget class="DrawableView" name="view"/>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="2,0">
+       <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="2,0,0">
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_7">
           <item>
@@ -41,6 +41,13 @@
              </widget>
             </item>
            </layout>
+          </item>
+          <item>
+           <widget class="Line" name="line_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -63,7 +70,21 @@
          </layout>
         </item>
         <item>
+         <widget class="Line" name="line_4">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
          <layout class="QVBoxLayout" name="verticalLayout_8">
+          <item>
+           <widget class="QPushButton" name="btn_mode">
+            <property name="text">
+             <string>…</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <widget class="QPushButton" name="btn_ok">
             <property name="text">

@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 from PyQt5.QtCore import QRectF, Qt, QPoint, QPointF
 from PyQt5.QtGui import QBrush, QPen, QColor, QPolygonF
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsPixmapItem, QGraphicsRectItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPolygonItem
 
 from data_objs import GraphImage
 from ui.canvas_ui import BoxGraphicsItem, DrawableView, RPolygonGraphicsItem
@@ -62,22 +62,24 @@ class CanvasController:
     def set_selected_box(self, rect: QGraphicsRectItem):
         self.view.set_box_selected(rect)
 
+    def set_selected_mask(self, polygon: QGraphicsPolygonItem):
+        self.view.set_polygon_selected(polygon)
+
     def remove_box(self, rect: QGraphicsRectItem):
         self.view.remove_drawn_rect(rect)
 
-    def map_scene2view(self, rect: QRectF) -> Tuple:
+    def map_scene2view(self, points: List[QPointF]) -> List[Tuple[float, float]]:
         """
 
-        :param rect:
+        :param points:
         :return: tuple(x1, y1, x2, y2)
         """
-        pt1 = rect.topLeft()
-        pt2 = rect.bottomRight()
+        new_points = []
+        for pt in points:
+            new_pt = self.view.mapFromScene(pt)
+            new_points.append((new_pt.x(), new_pt.y()))
 
-        pt1 = self.view.mapFromScene(pt1)
-        pt2 = self.view.mapFromScene(pt2)
-
-        return pt1.x(), pt1.y(), pt2.x(), pt2.y()
+        return new_points
 
     def map_view2scene(self, box_coord) -> QRectF:
         """
@@ -90,6 +92,7 @@ class CanvasController:
         pt2 = self.view.mapToScene(QPoint(int(x2), int(y2)))
         return QRectF(pt1, pt2)
 
-    def revise_rect_color(self, color: Tuple[int, int, int]):
+    def revise_obj_color(self, color: Tuple[int, int, int]):
         pen = QPen(QColor(*color))
         self.view.rect_selected_pen = pen
+        self.view.polygon_selected_pen = pen

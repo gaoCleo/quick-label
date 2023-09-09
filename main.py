@@ -1,8 +1,11 @@
 import json
 import os.path
 import sys
+
+from PyQt5.QtCore import QRectF
+
 import my_config as config
-from typing import Union, Optional
+from typing import Union, Optional, Tuple, List
 
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QGraphicsScene, QListWidget, QGraphicsPixmapItem, \
     QGraphicsRectItem, QListWidgetItem, QGraphicsPolygonItem, QInputDialog, QLineEdit
@@ -21,9 +24,14 @@ def my_log(msg: str):
 
 
 class MyMainWindows(QMainWindow, Ui_MainWindow):
+    NO_MODE = 0
+    BOX_MODE = 1
+    MASK_MODE = 2
+
     def __init__(self):
         super(MyMainWindows, self).__init__()
 
+        self.mode = 2
         self.img: Optional[GraphImage] = None
         self.default_category = 'object'
         self.obj_id = 0
@@ -42,15 +50,19 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.obj_detector = ObjectDetector()
 
     def sig_bound(self):
-        self.view.sig_add_box.connect(self.add_box)
-        self.view.sig_update_box.connect(self.update_box_coord)
+        self.view.sig_add_box.connect(self.add_box_slot)
+        self.view.sig_add_polygon.connect(self.add_mask_slot)
+        self.view.sig_update_box.connect(self.update_box_coord_slot)
+        self.view.sig_update_polygon.connect(self.update_mask_coord_slot)
         self.view.sig_remove_box.connect(self.remove_obj_item)
         self.view.sig_select_box.connect(self.select_obj_item)
+        self.view.sig_select_polygon.connect(self.select_obj_item)
         self.lw_objs.itemClicked.connect(self.select_obj_item)
         self.lw_labels.itemClicked.connect(self.set_current_category)
         self.lw_labels.itemClicked.connect(self.update_category)
 
     def init_ui(self):
+        self.shift_mode()
         self.color_controller = ColorController()
         # 设置场景
         self.canvas_controller = CanvasController(self.view)
@@ -68,6 +80,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.category_labels_controller.init_ui(self.color_controller.default[0], self.default_category)
 
     def btn_bound(self):
+        self.btn_mode.clicked.connect(self.shift_mode)
         self.btn_open_pic.clicked.connect(self.open_pic)
         self.btn_save_pic.clicked.connect(self.save_pic)
         self.btn_detect_box.clicked.connect(self.detect_box)
@@ -82,6 +95,27 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.btn_add_mask.clicked.connect(self.set_add_mask)
 
     ######## btn func ###############
+    def shift_mode(self):
+        self.mode = (self.mode + 1) % 3
+        if self.mode == self.NO_MODE:
+            self.btn_revise_box.setDisabled(True)
+            self.btn_add_box.setDisabled(True)
+            self.btn_revise_mask.setDisabled(True)
+            self.btn_add_mask.setDisabled(True)
+            self.btn_mode.setText('…')
+        elif self.mode == self.BOX_MODE:
+            self.btn_revise_box.setDisabled(False)
+            self.btn_add_box.setDisabled(False)
+            self.btn_revise_mask.setDisabled(True)
+            self.btn_add_mask.setDisabled(True)
+            self.btn_mode.setText('□')
+        elif self.mode == self.MASK_MODE:
+            self.btn_revise_box.setDisabled(True)
+            self.btn_add_box.setDisabled(True)
+            self.btn_revise_mask.setDisabled(False)
+            self.btn_add_mask.setDisabled(False)
+            self.btn_mode.setText('◇')
+
     def set_flags_false(self):
         my_log('set all flags to False')
         self.canvas_controller.set_flag(self.view.DRAW_BOX, False)
@@ -175,23 +209,43 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         print("delete category")
 
     ######## signals func ###############
-    def add_box(self, rect):
-        coord = self.canvas_controller.map_scene2view(rect.rect())
-        if self.img is not None:
-            coord = self.img.map_resized2original(coord)
-        obj_item = ObjectItem(obj_id=self.obj_id, rect=rect, original_coord=coord, category=self.default_category)
+    def _add_obj_slot(self, obj_item):
         self.objs_list_controller.add_obj(obj_item,
                                           self.color_controller.query_color_name(self.default_category))
         self.obj_id += 1
         self.objs_can.add_obj(obj_item)
 
-    def update_box_coord(self, rect):
-        coord = self.canvas_controller.map_scene2view(rect.rect())
-        if self.img is not None:
-            coord = self.img.map_resized2original(coord)
+    def add_box_slot(self, rect: QGraphicsRectItem):
+        coord = self._transform_rect_s2v(rect.rect())
+
+        obj_item = ObjectItem(obj_id=self.obj_id, rect=rect, original_coord=coord, category=self.default_category)
+        self._add_obj_slot(obj_item)
+
+    def add_mask_slot(self, polygon_item: QGraphicsPolygonItem):
+        bounding_rect = polygon_item.polygon().boundingRect()
+        bounding_box = self._transform_rect_s2v(bounding_rect)
+        points = self._transform_polygon_s2v(polygon_item)
+
+        obj_item = ObjectItem(obj_id=self.obj_id, category=self.default_category,
+                              original_coord=bounding_box,
+                              mask=polygon_item, original_mask=points)
+        self._add_obj_slot(obj_item)
+
+    def update_box_coord_slot(self, rect: QGraphicsRectItem):
+        coord = self._transform_rect_s2v(rect.rect())
         obj_item = self.objs_can.query_obj(rect)
         if obj_item is not None:
             obj_item.original_coord = coord
+
+    def update_mask_coord_slot(self, polygon_item: QGraphicsPolygonItem):
+        bounding_rect = polygon_item.polygon().boundingRect()
+        bounding_box = self._transform_rect_s2v(bounding_rect)
+        points = self._transform_polygon_s2v(polygon_item)
+
+        obj_item = self.objs_can.query_obj(polygon_item)
+        if obj_item is not None:
+            obj_item.original_coord = bounding_box
+            obj_item.original_mask = points
 
     def remove_obj_item(self, item: Union[QGraphicsRectItem,
                                           QListWidgetItem,
@@ -217,11 +271,16 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
             # 当物体被选中后，一系列事情发生
             self.lw_objs.itemClicked.disconnect(self.select_obj_item)
             self.view.sig_select_box.disconnect(self.select_obj_item)
+            self.view.sig_select_polygon.disconnect(self.select_obj_item)
 
             self.objs_list_controller.set_selected(obj_item_selected.list_item)
-            self.canvas_controller.set_selected_box(obj_item_selected.rect)
+            if obj_item_selected.rect is not None:
+                self.canvas_controller.set_selected_box(obj_item_selected.rect)
+            if obj_item_selected.mask is not None:
+                self.canvas_controller.set_selected_mask(obj_item_selected.mask)
             self.obj_msg_controller.set_obj_msg(obj_item_selected)
 
+            self.view.sig_select_polygon.connect(self.select_obj_item)
             self.view.sig_select_box.connect(self.select_obj_item)
             self.lw_objs.itemClicked.connect(self.select_obj_item)
 
@@ -232,9 +291,9 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
 
     def update_category(self):
         item = self.objs_list_controller.lw.currentItem()
-        obj_item_selected = None
+        obj_item_selected: Optional[ObjectItem] = None
         if item is not None:
-            obj_item_selected: ObjectItem = self.objs_can.query_obj(item)
+            obj_item_selected = self.objs_can.query_obj(item)
         if obj_item_selected is not None:
             # update obj_item
             obj_item_selected.category = self.default_category
@@ -242,7 +301,26 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
             self.objs_list_controller.revise_object(obj_item_selected,
                                                     self.color_controller.query_color_name(self.default_category))
             self.obj_msg_controller.set_obj_msg(obj_item_selected)
-            self.canvas_controller.revise_rect_color(self.color_controller.query_color(self.default_category))
+            self.canvas_controller.revise_obj_color(self.color_controller.query_color(self.default_category))
+
+    ########## utils #################
+    def _transform_rect_s2v(self, rect: QRectF) -> Tuple:
+        pt1 = rect.topLeft()
+        pt2 = rect.bottomRight()
+        coord = self.canvas_controller.map_scene2view([pt1, pt2])
+        if self.img is not None:
+            coord = self.img.map_resized2original(coord)
+        x1, y1, x2, y2 = coord[0][0], coord[0][1], coord[1][0], coord[1][1]
+        return  x1, y1, x2, y2
+
+    def _transform_polygon_s2v(self, polygon_item: QGraphicsPolygonItem) -> List[Tuple[float, float]]:
+        polygon = polygon_item.polygon()
+        num_points = polygon.size()
+        points = [polygon.at(i) for i in range(num_points)]
+        points = self.canvas_controller.map_scene2view(points)
+        if self.img is not None:
+            points = self.img.map_resized2original(points)
+        return points
 
 
 if __name__ == '__main__':
