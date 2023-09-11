@@ -46,8 +46,8 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.setup_models()
 
     def setup_models(self):
-        # from object_detector.detector import ObjectDetector
-        # self.obj_detector = ObjectDetector()
+        from object_detector.detector import ObjectDetector
+        self.obj_detector = ObjectDetector()
         from segment.segment_ai import SegmentAnythingAI
         self.segment_ai = SegmentAnythingAI(r'segment/segment_anything/sam_vit_h_4b8939.pth')
 
@@ -173,6 +173,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         if os.path.exists(img_path):
             self.img = GraphImage(img_path, self.view.size())
             self.canvas_controller.set_img(self.img.item)
+            self._init_state()
 
     def save_pic(self):
         print("save pic")
@@ -333,6 +334,19 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         if self.img is not None:
             points = self.img.map_resized2original(points)
         return points
+
+    def _init_state(self):
+        for obj_item in self.objs_can:
+            # self.objs_can.remove_obj(obj_item)
+            self.objs_list_controller.remove_listitem(obj_item.list_item)
+            self.canvas_controller.remove_box(obj_item.rect)
+            self.view.scene().removeItem(obj_item.mask)
+        if self.view.revise_polygon_item is not None:
+            self.view.scene().removeItem(self.view.revise_polygon_item)
+        if self.view.revise_box_item is not None:
+            self.view.scene().removeItem(self.view.revise_box_item)
+        self.objs_can = ObjectItemCan()
+        self.set_flags_false()
 
 
 if __name__ == '__main__':
