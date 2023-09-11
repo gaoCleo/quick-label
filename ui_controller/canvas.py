@@ -44,15 +44,20 @@ class CanvasController:
         :return:
         """
         pen = QPen(QColor(*color))
-        self.view.draw_box(self.map_view2scene(box_coord), pen)
+        x1, y1, x2, y2 = box_coord
+        self.view.draw_box(QRectF(self.map_view2scene([(x1, y1), (x2, y2)])), pen)
 
-    def add_mask(self, mask: List[Tuple[float, float]]):
-        points = []
-        for point in mask:
-            points.append(QPointF(point[0], point[1]))
+    def add_mask_in_box(self, mask: List[Tuple[float, float]]):
+        """
+        添加 mask 但不新增 objects
+        :param mask:
+        :return:
+        """
+        points = self.map_view2scene(mask)
         polygon = QPolygonF(points)
-        polygon_item = RPolygonGraphicsItem(polygon)
-        self.scene.addItem(polygon_item)
+        # polygon_item = RPolygonGraphicsItem(polygon)
+        # self.scene.addItem(polygon_item)
+        self.scene.addPolygon(polygon)
 
     def get_boxes(self) -> List[Tuple]:
         drawn_boxes = [self.map_scene2view(item.rect())
@@ -81,16 +86,17 @@ class CanvasController:
 
         return new_points
 
-    def map_view2scene(self, box_coord) -> QRectF:
+    def map_view2scene(self, points: List[Tuple[float, float]]) -> List[QPointF]:
         """
 
-        :param box_coord: [x1, y1, x2, y2] in view coord
+        :param points: in view coord
         :return: QRectF in scene coord
         """
-        x1, y1, x2, y2 = box_coord
-        pt1 = self.view.mapToScene(QPoint(int(x1), int(y1)))
-        pt2 = self.view.mapToScene(QPoint(int(x2), int(y2)))
-        return QRectF(pt1, pt2)
+        pts = []
+        for point in points:
+            pt = self.view.mapToScene(QPoint(int(point[0]), int(point[1])))
+            pts.append(pt)
+        return pts
 
     def revise_obj_color(self, color: Tuple[int, int, int]):
         pen = QPen(QColor(*color))

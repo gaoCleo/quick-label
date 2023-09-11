@@ -46,8 +46,10 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.setup_models()
 
     def setup_models(self):
-        from object_detector.detector import ObjectDetector
-        self.obj_detector = ObjectDetector()
+        # from object_detector.detector import ObjectDetector
+        # self.obj_detector = ObjectDetector()
+        from segment.segment_ai import SegmentAnythingAI
+        self.segment_ai = SegmentAnythingAI(r'segment/segment_anything/sam_vit_h_4b8939.pth')
 
     def sig_bound(self):
         self.view.sig_add_box.connect(self.add_box_slot)
@@ -191,12 +193,20 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         if self.img is not None:
             xyxy_list, logits = self.obj_detector.detect(img_path=self.img.img_meta['path'],
                                                          text_prompt=self.le_prompt.text())
+
             for xyxy in xyxy_list:
-                self.canvas_controller.add_box(self.img.map_original2resized(xyxy),
+                x1, y1, x2, y2 = xyxy
+                self.canvas_controller.add_box(self.img.map_original2resized([(x1, y1), (x2, y2)]),
                                                self.color_controller.query_color(self.default_category))
 
     def detect_mask(self):
         print("detect mask")
+        if self.img is not None:
+            boxes = [obj_item.original_coord for obj_item in self.objs_can]
+            self.segment_ai.set_img(self.img.img_meta['path'])
+            for box in boxes:
+                points = self.segment_ai.detect_by_boxes(boxes=[box,])[0]
+                self.canvas_controller.add_mask_in_box(self.img.map_original2resized(points))
 
     def add_category(self):
         my_log("add a category")

@@ -21,11 +21,16 @@ class GraphImage:
         self.img_meta['resized_width'] = pixmap.width()
         self.item = QGraphicsPixmapItem(pixmap)
 
-    def map_original2resized(self, coord) -> Tuple:
-        x1, y1, x2, y2 = coord
+    def map_original2resized(self, points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        new_points = []
         h_rate = self.img_meta['resized_height'] / self.img_meta['height']
         w_rate = self.img_meta['resized_width'] / self.img_meta['width']
-        return x1 * w_rate, y1 * h_rate, x2 * w_rate, y2 * h_rate
+        for point in points:
+            x, y = point
+            x = x * w_rate
+            y = y * h_rate
+            new_points.append((x, y))
+        return new_points
 
     def map_resized2original(self, points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
         new_points = []
