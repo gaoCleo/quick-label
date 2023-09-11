@@ -47,7 +47,7 @@ class CanvasController:
         x1, y1, x2, y2 = box_coord
         self.view.draw_box(QRectF(self.map_view2scene([(x1, y1), (x2, y2)])), pen)
 
-    def add_mask_in_box(self, mask: List[Tuple[float, float]]):
+    def add_mask_in_box(self, mask: List[Tuple[float, float]], color: Tuple[int, int, int]) -> QGraphicsPolygonItem:
         """
         添加 mask 但不新增 objects
         :param mask:
@@ -57,12 +57,9 @@ class CanvasController:
         polygon = QPolygonF(points)
         # polygon_item = RPolygonGraphicsItem(polygon)
         # self.scene.addItem(polygon_item)
-        self.scene.addPolygon(polygon)
-
-    def get_boxes(self) -> List[Tuple]:
-        drawn_boxes = [self.map_scene2view(item.rect())
-                       for item in self.view.drawn_box]
-        return drawn_boxes
+        pen = QPen(QColor(*color))
+        brush = QBrush(QColor(*color, 20))
+        return self.scene.addPolygon(polygon, pen, brush)
 
     def set_selected_box(self, rect: QGraphicsRectItem):
         self.view.set_box_selected(rect)

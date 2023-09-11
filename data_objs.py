@@ -85,6 +85,10 @@ class ObjectItemCan:
         self._objs_listitem.append(obj.list_item)
         self._objs_mask.append(obj.mask)
 
+    def set_rect_None(self, idx: int):
+        self._objs[idx].rect = None
+        self._objs_rect[idx] = None
+
     def remove_obj(self, obj: ObjectItem):
         idx = self._query_index(obj)
         if idx is not None:

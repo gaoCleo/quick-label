@@ -202,11 +202,24 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
     def detect_mask(self):
         print("detect mask")
         if self.img is not None:
-            boxes = [obj_item.original_coord for obj_item in self.objs_can]
             self.segment_ai.set_img(self.img.img_meta['path'])
-            for box in boxes:
-                points = self.segment_ai.detect_by_boxes(boxes=[box,])[0]
-                self.canvas_controller.add_mask_in_box(self.img.map_original2resized(points))
+            for i, obj_item in enumerate(self.objs_can):
+                drawn_mask = obj_item.mask
+                if drawn_mask is None:  # 如果为真说明是画框生成的 obj，要用模型预测 mask；反之是自己画了 mask，不需要预测 mask
+                    box = obj_item.original_coord
+                    points = self.segment_ai.detect_by_boxes(boxes=[box, ])[0]
+                    polygon_item = self.canvas_controller.add_mask_in_box(self.img.map_original2resized(points),
+                                                                          color=self.color_controller.query_color(obj_item.category))
+                    obj_item.mask = polygon_item
+                    obj_item.original_mask = points
+
+                    bounding_rect = polygon_item.polygon().boundingRect()
+                    bounding_box = self._transform_rect_s2v(bounding_rect)
+                    obj_item.original_coord = bounding_box
+
+                    # 删除原来画的 bounding box
+                    self.view.scene().removeItem(obj_item.rect)
+                    self.objs_can.set_rect_None(i)
 
     def add_category(self):
         my_log("add a category")
