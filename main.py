@@ -56,7 +56,6 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.view.sig_add_polygon.connect(self.add_mask_slot)
         self.view.sig_update_box.connect(self.update_box_coord_slot)
         self.view.sig_update_polygon.connect(self.update_mask_coord_slot)
-        self.view.sig_remove_box.connect(self.remove_obj_item)
         self.view.sig_select_box.connect(self.select_obj_item)
         self.view.sig_select_polygon.connect(self.select_obj_item)
         self.lw_objs.itemClicked.connect(self.select_obj_item)
@@ -155,6 +154,11 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                 self.objs_can.remove_obj(obj_item)
                 self.objs_list_controller.remove_listitem(list_item)
                 self.canvas_controller.remove_box(obj_item.rect)
+                self.view.scene().removeItem(obj_item.mask)
+                if self.view.revise_polygon_item is not None:
+                    self.view.scene().removeItem(self.view.revise_polygon_item)
+                if self.view.revise_box_item is not None:
+                    self.view.scene().removeItem(self.view.revise_box_item)
                 self.set_flags_false()
 
     def set_revise_box(self):
@@ -269,21 +273,6 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         if obj_item is not None:
             obj_item.original_coord = bounding_box
             obj_item.original_mask = points
-
-    def remove_obj_item(self, item: Union[QGraphicsRectItem,
-                                          QListWidgetItem,
-                                          QGraphicsPolygonItem]):
-        obj_item_selected: ObjectItem = self.objs_can.query_obj(item)
-        if obj_item_selected is not None:
-            my_log(f'remove object id: {obj_item_selected.object_id}')
-
-            self.view.sig_remove_box.disconnect(self.remove_obj_item)
-
-            self.objs_list_controller.remove_listitem(obj_item_selected.list_item)
-            self.objs_can.remove_obj(obj_item_selected)
-            self.canvas_controller.remove_box(obj_item_selected.rect)
-
-            self.view.sig_remove_box.connect(self.remove_obj_item)
 
     def select_obj_item(self, item: Union[QGraphicsRectItem,
                                           QListWidgetItem,
