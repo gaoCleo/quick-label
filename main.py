@@ -2,6 +2,8 @@ import json
 import os.path
 import sys
 
+import cv2
+import numpy as np
 from PyQt5.QtCore import QRectF
 
 import my_config as config
@@ -183,11 +185,16 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
             img_anno = {'file_name': file_name}
             obj_anns = []
             for obj in self.objs_can:
-                # todo: 这里补充保存 mask
-                obj_anns.append({"obj_id": self.obj_id,
+                if obj.original_mask is not None:
+                    mask_img = self._save_mask(obj.original_mask)
+                    mask_dir = os.path.join(config.save_dir, short_filename)
+                    if not os.path.exists(mask_dir):
+                        os.mkdir(mask_dir)
+                    cv2.imwrite(os.path.join(mask_dir, f'{obj.object_id}.png'), mask_img)
+                obj_anns.append({"obj_id": obj.object_id,
                                  "annotation": {"box": obj.original_coord,
                                                 "category": obj.category,
-                                                "mask": f"{self.obj_id}.png"}})
+                                                "mask": f"{short_filename}/{obj.object_id}.png"}})
 
             img_anno['obj_anns'] = obj_anns
             with open(os.path.join(config.save_dir, f'{short_filename}.json'), 'w', encoding='utf8') as f:
@@ -347,6 +354,16 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
             self.view.scene().removeItem(self.view.revise_box_item)
         self.objs_can = ObjectItemCan()
         self.set_flags_false()
+
+    def _save_mask(self, points: List[Tuple[float, float]]):
+        if self.img is not None:
+            h = self.img.img_meta['height']
+            w = self.img.img_meta['width']
+            mask = np.zeros((h, w), dtype=np.uint8)
+            cnt = np.array(points)
+            cnt = cnt[:, None, :]
+            cv2.drawContours(mask, [cnt, ], -1, (255, 255, 255), -1)
+            return mask
 
 
 if __name__ == '__main__':

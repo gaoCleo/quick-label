@@ -99,5 +99,7 @@ class CanvasController:
 
     def revise_obj_color(self, color: Tuple[int, int, int]):
         pen = QPen(QColor(*color))
+        brush = QBrush(QColor(*color, 150))
         self.view.rect_selected_pen = pen
         self.view.polygon_selected_pen = pen
+        self.view.polygon_selected_brush = brush

@@ -52,6 +52,7 @@ class DrawableView(QGraphicsView):
         self.polygon_selected: Optional[QGraphicsPolygonItem] = None
         self.revise_polygon_item: Optional[RPolygonGraphicsItem] = None
         self.polygon_selected_pen: Optional[QPen] = None
+        self.polygon_selected_brush: Optional[QBrush] = None
 
     def set_pen(self, color: Tuple[int, int, int]):
         self.current_pen = QPen(QColor(*color))
@@ -129,6 +130,7 @@ class DrawableView(QGraphicsView):
     def _remove_revise_polygon_item(self):
         if self.revise_polygon_item is not None:
             self.polygon_selected.setPen(self.polygon_selected_pen)
+            self.polygon_selected.setBrush(self.polygon_selected_brush)
             self.polygon_selected.setPolygon(self.revise_polygon_item.polygon())
             self.scene().removeItem(self.revise_polygon_item)
 
@@ -136,6 +138,7 @@ class DrawableView(QGraphicsView):
             self.revise_polygon_item = None
             self.polygon_selected = None
             self.polygon_selected_pen = None
+            self.polygon_selected_brush = None
 
     def set_box_selected(self, item: QGraphicsRectItem):
         self.set_flag(self.REVISE_BOX, True)
@@ -155,6 +158,7 @@ class DrawableView(QGraphicsView):
                 self._remove_revise_polygon_item()
         self.polygon_selected = item
         self.polygon_selected_pen = item.pen()
+        self.polygon_selected_brush = item.brush()
         item.setPen(QPen(Qt.transparent))
         self._add_editable_polygon(item.polygon())
         self.sig_select_polygon.emit(item)
