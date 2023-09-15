@@ -173,9 +173,9 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         img_path, _ = QFileDialog.getOpenFileName(self.centralwidget, "选择图片", "../", "*.jpg;;*.png;;All Files(*)")
         my_log(f"open img: {img_path}")
         if os.path.exists(img_path):
+            self._init_state()
             self.img = GraphImage(img_path, self.view.size())
             self.canvas_controller.set_img(self.img.item)
-            self._init_state()
 
     def save_pic(self):
         print("save pic")
