@@ -194,7 +194,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                 obj_anns.append({"obj_id": obj.object_id,
                                  "annotation": {"box": obj.original_coord,
                                                 "category": obj.category,
-                                                "mask": f"{short_filename}/{obj.object_id}.png"}})
+                                                "mask": obj.original_mask}})
 
             img_anno['obj_anns'] = obj_anns
             with open(os.path.join(config.save_dir, f'{short_filename}.json'), 'w', encoding='utf8') as f:
@@ -222,7 +222,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                     points = self.segment_ai.detect_by_boxes(boxes=[box, ])[0]
                     polygon_item = self.canvas_controller.add_mask_in_box(self.img.map_original2resized(points),
                                                                           color=self.color_controller.query_color(obj_item.category))
-                    obj_item.mask = polygon_item
+                    self.objs_can.set_mask_item(i, polygon_item)
                     obj_item.original_mask = points
 
                     bounding_rect = polygon_item.polygon().boundingRect()
@@ -231,7 +231,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
 
                     # 删除原来画的 bounding box
                     self.view.scene().removeItem(obj_item.rect)
-                    self.objs_can.set_rect_None(i)
+                    self.objs_can.set_rect_item(i, None)
 
     def add_category(self):
         my_log("add a category")
@@ -331,7 +331,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         if self.img is not None:
             coord = self.img.map_resized2original(coord)
         x1, y1, x2, y2 = coord[0][0], coord[0][1], coord[1][0], coord[1][1]
-        return  x1, y1, x2, y2
+        return x1, y1, x2, y2
 
     def _transform_polygon_s2v(self, polygon_item: QGraphicsPolygonItem) -> List[Tuple[float, float]]:
         polygon = polygon_item.polygon()
@@ -360,7 +360,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
             h = self.img.img_meta['height']
             w = self.img.img_meta['width']
             mask = np.zeros((h, w), dtype=np.uint8)
-            cnt = np.array(points)
+            cnt = np.array(points, dtype=np.int64)
             cnt = cnt[:, None, :]
             cv2.drawContours(mask, [cnt, ], -1, (255, 255, 255), -1)
             return mask

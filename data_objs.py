@@ -85,6 +85,14 @@ class ObjectItemCan:
         self._objs_listitem.append(obj.list_item)
         self._objs_mask.append(obj.mask)
 
+    def set_rect_item(self, idx: int, item: Optional[QGraphicsRectItem]):
+        self._objs[idx].rect = item
+        self._objs_rect[idx] = item
+
+    def set_mask_item(self, idx: int, item: Optional[QGraphicsPolygonItem]):
+        self._objs[idx].mask = item
+        self._objs_mask[idx] = item
+
     def set_rect_None(self, idx: int):
         self._objs[idx].rect = None
         self._objs_rect[idx] = None
