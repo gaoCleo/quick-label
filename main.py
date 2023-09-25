@@ -33,6 +33,10 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super(MyMainWindows, self).__init__()
 
+        self.img_dir = None
+        self.img_path_list = None
+        self.img_path_list_idx = None
+
         self.mode = 2
         self.img: Optional[GraphImage] = None
         self.default_category = 'object'
@@ -45,7 +49,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
 
         self.sig_bound()
 
-        self.setup_models()
+        # self.setup_models()
 
     def setup_models(self):
         from object_detector.detector import ObjectDetector
@@ -96,6 +100,9 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.btn_delete_obj.clicked.connect(self.delete_obj)
         self.btn_revise_mask.clicked.connect(self.set_revise_mask)
         self.btn_add_mask.clicked.connect(self.set_add_mask)
+        self.btn_open_dir.clicked.connect(self.open_img_dir)
+        self.btn_previous_img.clicked.connect(self.previous_img)
+        self.btn_next_img.clicked.connect(self.next_img)
 
     ######## btn func ###############
     def shift_mode(self):
@@ -173,9 +180,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         img_path, _ = QFileDialog.getOpenFileName(self.centralwidget, "选择图片", "../", "*.jpg;;*.png;;All Files(*)")
         my_log(f"open img: {img_path}")
         if os.path.exists(img_path):
-            self._init_state()
-            self.img = GraphImage(img_path, self.view.size())
-            self.canvas_controller.set_img(self.img.item)
+            self._set_img(img_path)
 
     def save_pic(self):
         print("save pic")
@@ -221,7 +226,8 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                     box = obj_item.original_coord
                     points = self.segment_ai.detect_by_boxes(boxes=[box, ])[0]
                     polygon_item = self.canvas_controller.add_mask_in_box(self.img.map_original2resized(points),
-                                                                          color=self.color_controller.query_color(obj_item.category))
+                                                                          color=self.color_controller.query_color(
+                                                                              obj_item.category))
                     self.objs_can.set_mask_item(i, polygon_item)
                     obj_item.original_mask = points
 
@@ -243,12 +249,61 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
     def delete_category(self):
         print("delete category")
 
+    def open_img_dir(self):
+        my_log('open img dir')
+        # img_dir = QFileDialog.getExistingDirectory(self, '选择文件夹', './')
+
+        img_path, _ = QFileDialog.getOpenFileName(self.centralwidget, "选择图片", "../", "*.jpg;;*.png;;All Files(*)")
+        my_log(f"open img: {img_path}")
+        if os.path.exists(img_path):
+            img_dir = os.path.dirname(img_path)
+            self.img_dir = img_dir
+            self.img_path_list = _get_img_paths(self.img_dir)
+            self.img_path_list_idx = self.img_path_list.index((os.path.basename(img_path)))
+            self._set_img(os.path.join(self.img_dir, self.img_path_list[self.img_path_list_idx]))
+            try:
+                self._read_annotations()
+            except:
+                pass
+
+    def previous_img(self):
+        my_log('annotate previous img')
+        if self.img_path_list is not None \
+                and self.img_path_list_idx is not None \
+                and self.img_dir is not None:
+            if self.img_path_list_idx > 1:
+                self.img_path_list_idx -= 1
+                self.save_pic()  # 自动保存
+                self._set_img(os.path.join(self.img_dir,
+                                           self.img_path_list[self.img_path_list_idx]))
+                try:
+                    self._read_annotations()
+                except:
+                    pass
+
+    def next_img(self):
+        my_log('annotate next img')
+        if self.img_path_list is not None \
+                and self.img_path_list_idx is not None \
+                and self.img_dir is not None:
+            if self.img_path_list_idx < (len(self.img_path_list) - 1):
+                self.img_path_list_idx += 1
+                self.save_pic()  # 自动保存
+                self._set_img(os.path.join(self.img_dir,
+                                           self.img_path_list[self.img_path_list_idx]))
+                try:
+                    self._read_annotations()
+                except:
+                    pass
+
     ######## signals func ###############
     def _add_obj_slot(self, obj_item):
-        self.objs_list_controller.add_obj(obj_item,
-                                          self.color_controller.query_color_name(self.default_category))
+        list_item = self.objs_list_controller.add_obj(obj_item,
+                                                      self.color_controller.query_color_name(
+                                                          self.default_category))
         self.obj_id += 1
         self.objs_can.add_obj(obj_item)
+        self.objs_can.set_list_item(idx=len(self.objs_can) - 1, item=list_item)
 
     def add_box_slot(self, rect: QGraphicsRectItem):
         coord = self._transform_rect_s2v(rect.rect())
@@ -355,6 +410,11 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.objs_can = ObjectItemCan()
         self.set_flags_false()
 
+    def _set_img(self, img_path: str):
+        self._init_state()
+        self.img = GraphImage(img_path, self.view.size())
+        self.canvas_controller.set_img(self.img.item)
+
     def _save_mask(self, points: List[Tuple[float, float]]):
         if self.img is not None:
             h = self.img.img_meta['height']
@@ -364,6 +424,47 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
             cnt = cnt[:, None, :]
             cv2.drawContours(mask, [cnt, ], -1, (255, 255, 255), -1)
             return mask
+
+    def _read_annotations(self):
+        if self.img_dir is not None and self.img is not None:
+            short_name = os.path.basename(self.img.img_meta['path']).split('.')[0]
+            json_path = os.path.join(self.img_dir, 'json', f'{short_name}.json')
+            if os.path.exists(json_path):
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+        obj_list = data["obj_anns"]
+        for obj in obj_list:
+            self.obj_id = obj["obj_id"]
+            category = obj["annotation"]["category"]
+            polygon = obj["annotation"]["mask"]
+            box = obj["annotation"]["box"]
+
+            color_name = self.color_controller.query_color_name(category)
+            if color_name is None:
+                color_name = self.color_controller.random_select(category)
+                self.category_labels_controller.add_category_label(color=color_name,
+                                                                   category=category)
+
+            polygon_item = self.canvas_controller.add_mask_in_box(self.img.map_original2resized(polygon),
+                                                                  color=self.color_controller.query_color(category))
+            obj_item = ObjectItem(obj_id=self.obj_id,
+                                  category=category,
+                                  mask=polygon_item,
+                                  original_coord=box,
+                                  original_mask=polygon)
+
+            self.objs_can.add_obj(obj_item)
+            list_item = self.objs_list_controller.add_obj(obj_item, color_name)
+            self.objs_can.set_list_item(idx=len(self.objs_can) - 1, item=list_item)
+
+
+def _is_picture(img_path: str):
+    return img_path.endswith('.png') or img_path.endswith('.jpg')
+
+
+def _get_img_paths(sr_dir: str):
+    img_list = os.listdir(sr_dir)
+    return list(filter(_is_picture, img_list))
 
 
 if __name__ == '__main__':

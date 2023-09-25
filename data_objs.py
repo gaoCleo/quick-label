@@ -93,9 +93,9 @@ class ObjectItemCan:
         self._objs[idx].mask = item
         self._objs_mask[idx] = item
 
-    def set_rect_None(self, idx: int):
-        self._objs[idx].rect = None
-        self._objs_rect[idx] = None
+    def set_list_item(self, idx: int, item: Optional[QListWidgetItem]):
+        self._objs[idx].list_item = item
+        self._objs_listitem[idx] = item
 
     def remove_obj(self, obj: ObjectItem):
         idx = self._query_index(obj)
@@ -114,7 +114,7 @@ class ObjectItemCan:
         self._objs_listitem.clear()
         self._objs_mask.clear()
 
-    def _query_index(self, obj_attr: Union[ObjectItem, int,
+    def query_index(self, obj_attr: Union[ObjectItem, int,
                                            QGraphicsRectItem,
                                            QListWidgetItem,
                                            QGraphicsPolygonItem]) -> Optional[int]:
@@ -137,14 +137,14 @@ class ObjectItemCan:
             return None
 
     def query_id(self, obj_attr: Union[QGraphicsRectItem, QListWidgetItem, QGraphicsPolygonItem]) -> Optional[int]:
-        idx = self._query_index(obj_attr)
+        idx = self.query_index(obj_attr)
         if idx is not None:
             return self._objs_id[idx]
         return None
 
     def query_obj(self, obj_attr: Union[int, QGraphicsRectItem, QListWidgetItem, QGraphicsPolygonItem]) -> Optional[
         ObjectItem]:
-        idx = self._query_index(obj_attr)
+        idx = self.query_index(obj_attr)
         if idx is not None:
             return self._objs[idx]
         return None

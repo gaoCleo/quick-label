@@ -11,8 +11,8 @@ class ObjectListController:
     def add_obj(self, obj_item: ObjectItem, color: str):
         icon = QIcon(QPixmap(f'color_icons/{color}.png'))
         list_item = QListWidgetItem(icon, obj_item.category)
-        obj_item.list_item = list_item
         self.lw.addItem(list_item)
+        return list_item
 
     def remove_listitem(self, item: QListWidgetItem):
         self.lw.removeItemWidget(item)

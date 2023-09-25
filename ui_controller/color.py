@@ -19,4 +19,7 @@ class ColorController:
         return self.category_color.get(category)[1]
 
     def query_color_name(self, category: str) -> str:
-        return self.category_color.get(category)[0]
+        res = self.category_color.get(category)
+        if res is None:
+            return res
+        return res[0]
