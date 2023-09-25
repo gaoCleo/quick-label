@@ -49,7 +49,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
 
         self.sig_bound()
 
-        # self.setup_models()
+        self.setup_models()
 
     def setup_models(self):
         from object_detector.detector import ObjectDetector
