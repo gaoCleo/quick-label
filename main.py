@@ -10,7 +10,7 @@ import my_config as config
 from typing import Union, Optional, Tuple, List
 
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QGraphicsScene, QListWidget, QGraphicsPixmapItem, \
-    QGraphicsRectItem, QListWidgetItem, QGraphicsPolygonItem, QInputDialog, QLineEdit
+    QGraphicsRectItem, QListWidgetItem, QGraphicsPolygonItem, QInputDialog, QLineEdit, QMessageBox
 
 from data_objs import GraphImage, ObjectItemCan, ObjectItem
 from ui.ui import Ui_MainWindow
@@ -43,19 +43,32 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.obj_id = 0
         self.objs_can = ObjectItemCan()
 
+        self.obj_detector = None
+        self.segment_ai = None
+
         self.setupUi(self)
         self.btn_bound()
         self.init_ui()
 
         self.sig_bound()
 
-        # self.setup_models()
+        self.setup_models()
 
     def setup_models(self):
-        from object_detector.detector import ObjectDetector
-        self.obj_detector = ObjectDetector()
-        from segment.segment_ai import SegmentAnythingAI
-        self.segment_ai = SegmentAnythingAI(r'segment/segment_anything/sam_vit_h_4b8939.pth')
+        try:
+            from object_detector.detector import ObjectDetector
+            self.obj_detector = ObjectDetector()
+        except:
+            msg_box = QMessageBox(QMessageBox.Critical,
+                                  '错误', 'grounding dino 模型部署错误，只能手动标注 bounding box 框，无法自动标注')
+            msg_box.exec_()
+        try:
+            from segment.segment_ai import SegmentAnythingAI
+            self.segment_ai = SegmentAnythingAI(r'segment/segment_anything/sam_vit_h_4b8939.pth')
+        except:
+            msg_box = QMessageBox(QMessageBox.Critical,
+                                  '错误', 'segment anything 模型部署错误，只能手动标注 mask，无法自动标注')
+            msg_box.exec_()
 
     def sig_bound(self):
         self.view.sig_add_box.connect(self.add_box_slot)
@@ -207,37 +220,47 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
 
     def detect_box(self):
         print("detect box")
-        if self.img is not None:
-            xyxy_list, logits = self.obj_detector.detect(img_path=self.img.img_meta['path'],
-                                                         text_prompt=self.le_prompt.text())
+        if self.img is not None and self.obj_detector is not None:
+            try:
+                xyxy_list, logits = self.obj_detector.detect(img_path=self.img.img_meta['path'],
+                                                             text_prompt=self.le_prompt.text())
 
-            for xyxy in xyxy_list:
-                x1, y1, x2, y2 = xyxy
-                self.canvas_controller.add_box(self.img.map_original2resized([(x1, y1), (x2, y2)]),
-                                               self.color_controller.query_color(self.default_category))
+                for xyxy in xyxy_list:
+                    x1, y1, x2, y2 = xyxy
+                    self.canvas_controller.add_box(self.img.map_original2resized([(x1, y1), (x2, y2)]),
+                                                   self.color_controller.query_color(self.default_category))
+            except:
+                msg_box = QMessageBox(QMessageBox.Critical,
+                                      '错误', '模型检测错误，请检查文件夹存放结构是否正确，以及模型是否成功部署')
+                msg_box.exec_()
 
     def detect_mask(self):
         print("detect mask")
-        if self.img is not None:
-            self.segment_ai.set_img(self.img.img_meta['path'])
-            for i, obj_item in enumerate(self.objs_can):
-                drawn_mask = obj_item.mask
-                if drawn_mask is None:  # 如果为真说明是画框生成的 obj，要用模型预测 mask；反之是自己画了 mask，不需要预测 mask
-                    box = obj_item.original_coord
-                    points = self.segment_ai.detect_by_boxes(boxes=[box, ])[0]
-                    polygon_item = self.canvas_controller.add_mask_in_box(self.img.map_original2resized(points),
-                                                                          color=self.color_controller.query_color(
-                                                                              obj_item.category))
-                    self.objs_can.set_mask_item(i, polygon_item)
-                    obj_item.original_mask = points
+        if self.img is not None and self.segment_ai is not None:
+            try:
+                self.segment_ai.set_img(self.img.img_meta['path'])
+                for i, obj_item in enumerate(self.objs_can):
+                    drawn_mask = obj_item.mask
+                    if drawn_mask is None:  # 如果为真说明是画框生成的 obj，要用模型预测 mask；反之是自己画了 mask，不需要预测 mask
+                        box = obj_item.original_coord
+                        points = self.segment_ai.detect_by_boxes(boxes=[box, ])[0]
+                        polygon_item = self.canvas_controller.add_mask_in_box(self.img.map_original2resized(points),
+                                                                              color=self.color_controller.query_color(
+                                                                                  obj_item.category))
+                        self.objs_can.set_mask_item(i, polygon_item)
+                        obj_item.original_mask = points
 
-                    bounding_rect = polygon_item.polygon().boundingRect()
-                    bounding_box = self._transform_rect_s2v(bounding_rect)
-                    obj_item.original_coord = bounding_box
+                        bounding_rect = polygon_item.polygon().boundingRect()
+                        bounding_box = self._transform_rect_s2v(bounding_rect)
+                        obj_item.original_coord = bounding_box
 
-                    # 删除原来画的 bounding box
-                    self.view.scene().removeItem(obj_item.rect)
-                    self.objs_can.set_rect_item(i, None)
+                        # 删除原来画的 bounding box
+                        self.view.scene().removeItem(obj_item.rect)
+                        self.objs_can.set_rect_item(i, None)
+            except:
+                msg_box = QMessageBox(QMessageBox.Critical,
+                                      '错误', '模型检测错误，请检查文件夹存放结构是否正确，以及模型是否成功部署')
+                msg_box.exec_()
 
     def add_category(self):
         my_log("add a category")

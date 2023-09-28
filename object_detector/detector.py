@@ -7,7 +7,7 @@ from groundingdino.util.inference import load_model, load_image, predict, annota
 import cv2
 
 model = load_model("object_detector/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py",
-                   "object_detector/GroundingDINO/weigts/groundingdino_swint_ogc.pth")
+                   "object_detector/GroundingDINO/weights/groundingdino_swint_ogc.pth")
 BOX_TRESHOLD = 0.25
 TEXT_TRESHOLD = 0.25
 
