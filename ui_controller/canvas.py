@@ -4,6 +4,7 @@ from PyQt5.QtCore import QRectF, Qt, QPoint, QPointF
 from PyQt5.QtGui import QBrush, QPen, QColor, QPolygonF
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPolygonItem
 
+import my_config
 from data_objs import GraphImage
 from ui.canvas_ui import BoxGraphicsItem, DrawableView, RPolygonGraphicsItem
 
@@ -60,7 +61,7 @@ class CanvasController:
         # polygon_item = RPolygonGraphicsItem(polygon)
         # self.scene.addItem(polygon_item)
         pen = QPen(QColor(*color))
-        brush = QBrush(QColor(*color, 150))
+        brush = QBrush(QColor(*color, my_config.BRUSH_INT))
         return self.scene.addPolygon(polygon, pen, brush)
 
     def set_selected_box(self, rect: QGraphicsRectItem):
@@ -99,7 +100,7 @@ class CanvasController:
 
     def revise_obj_color(self, color: Tuple[int, int, int]):
         pen = QPen(QColor(*color))
-        brush = QBrush(QColor(*color, 150))
+        brush = QBrush(QColor(*color, my_config.BRUSH_INT))
         self.view.rect_selected_pen = pen
         self.view.polygon_selected_pen = pen
         self.view.polygon_selected_brush = brush

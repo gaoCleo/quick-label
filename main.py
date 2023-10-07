@@ -479,6 +479,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
             self.objs_can.add_obj(obj_item)
             list_item = self.objs_list_controller.add_obj(obj_item, color_name)
             self.objs_can.set_list_item(idx=len(self.objs_can) - 1, item=list_item)
+        self.obj_id += 1
 
 
 def _is_picture(img_path: str):

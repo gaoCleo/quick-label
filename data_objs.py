@@ -98,7 +98,7 @@ class ObjectItemCan:
         self._objs_listitem[idx] = item
 
     def remove_obj(self, obj: ObjectItem):
-        idx = self._query_index(obj)
+        idx = self.query_index(obj)
         if idx is not None:
             del obj
             self._objs.pop(idx)
