@@ -18,11 +18,22 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_4">
       <item>
-       <widget class="QLabel" name="lb_pic_name">
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="1,0">
+        <item>
+         <widget class="QLabel" name="lb_pic_name">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_hide_mask">
+          <property name="text">
+           <string>hide mask</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <widget class="DrawableView" name="view"/>

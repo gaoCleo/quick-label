@@ -4,7 +4,8 @@ import sys
 
 import cv2
 import numpy as np
-from PyQt5.QtCore import QRectF
+from PyQt5.QtCore import QRectF, Qt
+from PyQt5.QtGui import QPen, QBrush, QColor
 
 import my_config
 import my_config as config
@@ -43,6 +44,8 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.default_category = 'object'
         self.obj_id = 0
         self.objs_can = ObjectItemCan()
+        self.obj_hide_mask: Optional[ObjectItem] = None
+        self.current_selected_obj: Optional[ObjectItem] = None
 
         self.obj_detector = None
         self.segment_ai = None
@@ -53,7 +56,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
 
         self.sig_bound()
 
-        self.setup_models()
+        # self.setup_models()
 
     def setup_models(self):
         try:
@@ -117,6 +120,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.btn_open_dir.clicked.connect(self.open_img_dir)
         self.btn_previous_img.clicked.connect(self.previous_img)
         self.btn_next_img.clicked.connect(self.next_img)
+        self.btn_hide_mask.clicked.connect(self.hide_mask)
 
     ######## btn func ###############
     def shift_mode(self):
@@ -180,6 +184,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                 self.view.scene().removeItem(obj_item.mask)
                 if self.view.revise_polygon_item is not None:
                     self.view.scene().removeItem(self.view.revise_polygon_item)
+                    self.view.revise_polygon_item = None
                 if self.view.revise_box_item is not None:
                     self.view.scene().removeItem(self.view.revise_box_item)
                 self.set_flags_false()
@@ -273,6 +278,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
 
     def delete_category(self):
         print("delete category")
+        self.category_labels_controller.del_category_label()
 
     def open_img_dir(self):
         my_log('open img dir')
@@ -335,6 +341,28 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                 except:
                     pass
 
+    def hide_mask(self):
+        if self.obj_hide_mask is None:
+            if self.current_selected_obj is not None:
+                self.obj_hide_mask = self.current_selected_obj
+                mask_item = self.obj_hide_mask.mask
+                if mask_item is not None:
+                    mask_item.setPen(QPen(Qt.transparent))
+                    mask_item.setBrush(QBrush(Qt.transparent))
+
+                if self.view.revise_polygon_item is not None:
+                    self.view.scene().removeItem(self.view.revise_polygon_item)
+                    self.view.revise_polygon_item = None
+        else:
+            mask_item = self.obj_hide_mask.mask
+            if mask_item is not None:
+                category = self.obj_hide_mask.category
+                color = self.color_controller.query_color(category)
+                mask_item.setPen(QPen(QColor(*color)))
+                mask_item.setBrush(QBrush(QColor(*color, my_config.BRUSH_INT)))
+                self.obj_hide_mask = None
+
+
     ######## signals func ###############
     def _add_obj_slot(self, obj_item):
         list_item = self.objs_list_controller.add_obj(obj_item,
@@ -380,6 +408,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                                           QListWidgetItem,
                                           QGraphicsPolygonItem]):
         obj_item_selected: ObjectItem = self.objs_can.query_obj(item)
+        self.current_selected_obj = obj_item_selected
         if obj_item_selected is not None:
             my_log(f'selected object id: {obj_item_selected.object_id}')
             # 当物体被选中后，一系列事情发生
@@ -446,9 +475,12 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
             self.view.scene().removeItem(self.view.revise_polygon_item)
         if self.view.revise_box_item is not None:
             self.view.scene().removeItem(self.view.revise_box_item)
+            self.view.revise_box_item = None
         self.objs_can = ObjectItemCan()
         self.set_flags_false()
         self.lb_pic_name.setText('')
+        self.obj_hide_mask = None
+        self.current_selected_obj = None
 
     def _set_img(self, img_path: str):
         self._init_state()

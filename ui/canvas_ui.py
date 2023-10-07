@@ -197,6 +197,8 @@ class DrawableView(QGraphicsView):
                                            scene_pt.y() - self.anchor_radius,
                                            self.anchor_radius * 2,
                                            self.anchor_radius * 2)
+                anchor.setPen(QPen(Qt.green))
+                anchor.setBrush(QBrush(Qt.green))
                 self._drawing_polygon_items.append(anchor)
                 self.scene().addItem(anchor)
 
