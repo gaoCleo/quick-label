@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 from PyQt5.QtCore import QRectF
 
+import my_config
 import my_config as config
 from typing import Union, Optional, Tuple, List
 
@@ -217,6 +218,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
             img_anno['obj_anns'] = obj_anns
             with open(os.path.join(config.save_dir, f'{short_filename}.json'), 'w', encoding='utf8') as f:
                 json.dump(img_anno, f)
+            return img_anno
 
     def detect_box(self):
         print("detect box")
@@ -296,7 +298,14 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                 and self.img_dir is not None:
             if self.img_path_list_idx > 1:
                 self.img_path_list_idx -= 1
-                self.save_pic()  # 自动保存
+
+                img_anno = self.save_pic()  # 自动保存
+                if my_config.COVER_JSON:
+                    short_name = os.path.basename(self.img.img_meta['path']).split('.')[0]
+                    json_path = os.path.join(self.img_dir, 'json', f'{short_name}.json')
+                    with open(json_path, 'w', encoding='utf8') as f:
+                        json.dump(img_anno, f)
+
                 self._set_img(os.path.join(self.img_dir,
                                            self.img_path_list[self.img_path_list_idx]))
                 try:
@@ -311,7 +320,14 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                 and self.img_dir is not None:
             if self.img_path_list_idx < (len(self.img_path_list) - 1):
                 self.img_path_list_idx += 1
-                self.save_pic()  # 自动保存
+
+                img_anno = self.save_pic()  # 自动保存
+                if my_config.COVER_JSON:
+                    short_name = os.path.basename(self.img.img_meta['path']).split('.')[0]
+                    json_path = os.path.join(self.img_dir, 'json', f'{short_name}.json')
+                    with open(json_path, 'w', encoding='utf8') as f:
+                        json.dump(img_anno, f)
+
                 self._set_img(os.path.join(self.img_dir,
                                            self.img_path_list[self.img_path_list_idx]))
                 try:
@@ -432,11 +448,13 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
             self.view.scene().removeItem(self.view.revise_box_item)
         self.objs_can = ObjectItemCan()
         self.set_flags_false()
+        self.lb_pic_name.setText('')
 
     def _set_img(self, img_path: str):
         self._init_state()
         self.img = GraphImage(img_path, self.view.size())
         self.canvas_controller.set_img(self.img.item)
+        self.lb_pic_name.setText(self.img.img_meta['path'])
 
     def _save_mask(self, points: List[Tuple[float, float]]):
         if self.img is not None:
