@@ -13,3 +13,10 @@ class LabelController:
         icon = QIcon(QPixmap(f'color_icons/{color}.png'))
         list_item = QListWidgetItem(icon, category)
         self.lw.addItem(list_item)
+
+    def del_category_label(self):
+        item = self.lw.currentItem()
+        if item:
+            self.lw.removeItemWidget(item)
+            self.lw.takeItem(self.lw.row(item))
+            del item
