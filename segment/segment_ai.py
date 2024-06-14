@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 import cv2
 import sys
 
+from tqdm import tqdm
+
 sys.path.append('..')
-from segment.segment_anything.segment_anything import sam_model_registry, SamPredictor
+from segment.segment_anything.segment_anything import sam_model_registry, SamPredictor, SamAutomaticMaskGenerator
 
 
 class SegmentAnythingAI:
@@ -17,6 +19,7 @@ class SegmentAnythingAI:
         sam = sam_model_registry[model_type](checkpoint=checkpoint_path)
         sam.to(device)
         self.predictor = SamPredictor(sam)
+        self.mask_generator = SamAutomaticMaskGenerator(sam, points_per_batch=32, points_per_side=15)
 
     def set_img(self, img_path):
         image = cv2.imread(img_path)
@@ -24,7 +27,36 @@ class SegmentAnythingAI:
 
         self.predictor.set_image(image)
 
-    def detect_by_boxes(self, boxes: list = None) -> List:
+    def detect_auto(self, img_path, return_mask_contour: bool = True, category: str = "", obj_id: int=0):
+        image = cv2.imread(img_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        masks = self.mask_generator.generate(image)
+        anns = []
+
+        for i, mask in enumerate(masks):
+            ann = {
+                "obj_id": obj_id,
+                "annotation": {
+                    "box": mask["bbox"],
+                    "category": category
+                }
+            }
+
+            if return_mask_contour:
+                contours, _ = cv2.findContours(mask["segmentation"].astype(np.uint8) * 255, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                nums = [contour.shape[0] for contour in contours]
+                idx = nums.index(max(nums))
+                epsilon = 0.005 * cv2.arcLength(contours[idx], True)
+                approx = cv2.approxPolyDP(contours[idx], epsilon, True).squeeze(1).tolist()  # shape = [num_points, 1, 2]
+                ann["annotation"]["mask"] = approx
+            else:
+                ann["annotation"]["mask"] = mask["segmentation"].astype(np.uint8) * 255
+
+            obj_id += 1
+            anns.append(ann)
+        return anns
+
+    def detect_by_boxes(self, boxes: list = None, return_mask_contour: bool = True) -> List:
         # add prompt
         if boxes is not None:
             boxes = np.array(boxes)
@@ -37,15 +69,18 @@ class SegmentAnythingAI:
 
         num = len(boxes)
         masks_contour = []
-        for i in range(num):
-            mask = masks[i].astype(np.uint8)
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            nums = [contour.shape[0] for contour in contours]
-            idx = nums.index(max(nums))
-            epsilon = 0.005 * cv2.arcLength(contours[idx], True)
-            approx = cv2.approxPolyDP(contours[idx], epsilon, True).squeeze(1).tolist()  # shape = [num_points, 1, 2]
-            masks_contour.append(approx)
-        return masks_contour
+        if return_mask_contour:
+            for i in range(num):
+                mask = masks[i].astype(np.uint8)
+                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                nums = [contour.shape[0] for contour in contours]
+                idx = nums.index(max(nums))
+                epsilon = 0.005 * cv2.arcLength(contours[idx], True)
+                approx = cv2.approxPolyDP(contours[idx], epsilon, True).squeeze(1).tolist()  # shape = [num_points, 1, 2]
+                masks_contour.append(approx)
+            return masks_contour
+        else:
+            return [masks[i].astype(np.uint8) for i in range(num)]
 
     def detect_by_points(self, img_path,
                          points: list = None,

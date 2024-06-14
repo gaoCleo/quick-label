@@ -122,6 +122,21 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         self.btn_next_img.clicked.connect(self.next_img)
         self.btn_hide_mask.clicked.connect(self.hide_mask)
 
+    def keyPressEvent(self, event):
+        pressed_key = event.key()
+        if pressed_key == Qt.Key_Left:
+            self.previous_img()
+        elif pressed_key == Qt.Key_Right:
+            self.next_img()
+        elif pressed_key == Qt.Key_A:
+            self.previous_img()
+        elif pressed_key == Qt.Key_D:
+            self.next_img()
+        elif pressed_key == Qt.Key_Delete:
+            self.delete_obj()
+        elif pressed_key == Qt.Key_Q:
+            self.delete_obj()
+
     ######## btn func ###############
     def shift_mode(self):
         self.mode = (self.mode + 1) % 3
@@ -187,7 +202,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                     self.view.revise_polygon_item = None
                 if self.view.revise_box_item is not None:
                     self.view.scene().removeItem(self.view.revise_box_item)
-                self.set_flags_false()
+                # self.set_flags_false()
 
     def set_revise_box(self):
         my_log('start revising objects')
@@ -238,7 +253,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                                                    self.color_controller.query_color(self.default_category))
             except:
                 msg_box = QMessageBox(QMessageBox.Critical,
-                                      '错误', '模型检测错误，请检查文件夹存放结构是否正确，以及模型是否成功部署')
+                                      '错误', '模型检测错误，请检查文件夹存放结构是否正确，以及grounding dino模型是否成功部署')
                 msg_box.exec_()
 
     def detect_mask(self):
@@ -284,7 +299,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         my_log('open img dir')
         # img_dir = QFileDialog.getExistingDirectory(self, '选择文件夹', './')
 
-        img_path, _ = QFileDialog.getOpenFileName(self.centralwidget, "选择图片", "../", "*.jpg;;*.png;;All Files(*)")
+        img_path, _ = QFileDialog.getOpenFileName(self.centralwidget, "选择图片", r"G:\WheatQualityDataset\2024sparse\dst", "*.jpg;;*.png;;All Files(*)")
         my_log(f"open img: {img_path}")
         if os.path.exists(img_path):
             img_dir = os.path.dirname(img_path)
@@ -331,6 +346,8 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
                 if my_config.COVER_JSON:
                     short_name = os.path.basename(self.img.img_meta['path']).split('.')[0]
                     json_path = os.path.join(self.img_dir, 'json', f'{short_name}.json')
+                    if not os.path.exists(os.path.join(self.img_dir, 'json')):
+                        os.mkdir(os.path.join(self.img_dir, 'json'))
                     with open(json_path, 'w', encoding='utf8') as f:
                         json.dump(img_anno, f)
 

@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+from typing import Tuple
 
 import cv2
 from tqdm import tqdm
@@ -12,13 +13,13 @@ obj_detector = ObjectDetector()
 segment_ai = SegmentAnythingAI(r'segment/segment_anything/sam_vit_h_4b8939.pth')
 
 
-def pipeline(img_path: str, save_img_dir: str, text_prompt: str):
+def pipeline(img_path: str, dsize: Tuple[int, int], save_img_dir: str, text_prompt: str, overlap: float):
     if not os.path.exists(save_img_dir):
         os.mkdir(save_img_dir)
     filename = os.path.basename(img_path).split('.')[0]
     filetype = os.path.basename(img_path).split('.')[1]
     # 切成 4 块并保存到新文件夹
-    patches, _, _ = _patchify(cv2.imread(img_path), (3, 3), overlap=0, return_list=True)
+    patches, _, _ = _patchify(cv2.imread(img_path), dsize, overlap=overlap, return_list=True)
     img_list = []
     for i, patch in enumerate(patches):
         img_save_name = os.path.join(save_img_dir, f'{filename}_{i}.{filetype}')
@@ -48,6 +49,36 @@ def pipeline(img_path: str, save_img_dir: str, text_prompt: str):
             object_id += 1
 
         img_anno['obj_anns'] = obj_anns
+
+        if not os.path.exists(os.path.join(save_img_dir, 'json')):
+            os.mkdir(os.path.join(save_img_dir, 'json'))
+        short_filename = os.path.basename(patch_path).split('.')[0]
+        with open(os.path.join(save_img_dir, 'json', f'{short_filename}.json'), 'w', encoding='utf8') as f:
+            json.dump(img_anno, f)
+
+
+def pipeline_sam_only(img_path: str, dsize: Tuple[int, int], save_img_dir: str, text_prompt: str, overlap: float):
+    if not os.path.exists(save_img_dir):
+        os.mkdir(save_img_dir)
+    filename = os.path.basename(img_path).split('.')[0]
+    filetype = os.path.basename(img_path).split('.')[1]
+    # 切成 4 块并保存到新文件夹
+    # patches, _, _ = _patchify(cv2.imdecode(img_path), dsize, overlap=overlap, return_list=True)
+    patches, _, _ = _patchify(cv2.imread(img_path), dsize, overlap=overlap, return_list=True)
+    img_list = []
+    for i, patch in enumerate(patches):
+        img_save_name = os.path.join(save_img_dir, f'{filename}_{i}.{filetype}')
+        cv2.imwrite(img_save_name, patch)
+        img_list.append(img_save_name)
+
+    for patch_path in tqdm(img_list):
+        object_id = 0
+        img_anno = {'file_name': patch_path}
+        segment_ai.set_img(patch_path)
+
+        img_anno['obj_anns'] = segment_ai.detect_auto(patch_path, category=text_prompt, obj_id=object_id)
+
+        object_id += len(img_anno['obj_anns'])
 
         if not os.path.exists(os.path.join(save_img_dir, 'json')):
             os.mkdir(os.path.join(save_img_dir, 'json'))
@@ -104,15 +135,31 @@ def _patchify(img, dsize, overlap=0.2, return_list=False):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--sr_dir', type=str, help='The root path of images to be detected')
-    parser.add_argument('--ds_dir', type=str, help='The root path of patches and json files to be saved')
-    parser.add_argument('--prompt', type=str, help='The prompt')
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--sr_dir', type=str, help='The root path of images to be detected')
+    # parser.add_argument('--ds_dir', type=str, help='The root path of patches and json files to be saved')
+    # parser.add_argument('--prompt', type=str, help='The prompt')
+    # args = parser.parse_args()
+    src_root_dir = 'G:\weeds_2024\Shanghai_mix'
+    dst_root_dir = 'G:\weeds_2024\Shanghai_mix_processing'
 
-    files = os.listdir(args.sr_dir)
-    for img in tqdm(files):
-        try:
-            pipeline(os.path.join(args.sr_dir, img), args.ds_dir, args.prompt)
-        except:
-            print(os.path.join(args.sr_dir, img), 'can not be detected')
+    subdirs = os.listdir(src_root_dir)
+    for subdir in subdirs:
+        print('='*50, subdir, '='*50)
+        if not os.path.exists(os.path.join(dst_root_dir, subdir)):
+            os.mkdir(os.path.join(dst_root_dir, subdir))
+        args = {
+            'sr_dir': os.path.join(src_root_dir, subdir),
+            'ds_dir': os.path.join(dst_root_dir, subdir),
+            'prompt': 'wheat'
+        }
+
+        files = os.listdir(args['sr_dir'])
+        for img in tqdm(files):
+            # pipeline_sam_only(os.path.join(args.sr_dir, img), (3, 3), args.ds_dir, args.prompt, overlap=0.2)
+            try:
+                # pipeline_sam_only(os.path.join(args.sr_dir, img), (3, 3), args.ds_dir, args.prompt, overlap=0.2)
+                pipeline(os.path.join(args['sr_dir'], img), (3, 3), args['ds_dir'], args['prompt'], overlap=0.0)
+            except Exception as e:
+                print(os.path.join(args['sr_dir'], img), 'can not be detected')
+                print(e)
