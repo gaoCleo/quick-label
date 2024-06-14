@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QGraphicsSce
     QGraphicsRectItem, QListWidgetItem, QGraphicsPolygonItem, QInputDialog, QLineEdit, QMessageBox
 
 from data_objs import GraphImage, ObjectItemCan, ObjectItem
+from ui.event_filter import EventAllFilter
 from ui.ui import Ui_MainWindow
 from ui_controller.canvas import CanvasController
 from ui_controller.category_label import LabelController
@@ -102,6 +103,8 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
 
         self.category_labels_controller = LabelController(self.lw_labels)
         self.category_labels_controller.init_ui(self.color_controller.default[0], self.default_category)
+
+        self.lw_objs.installEventFilter(EventAllFilter())
 
     def btn_bound(self):
         self.btn_mode.clicked.connect(self.shift_mode)
