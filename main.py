@@ -320,7 +320,7 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
         if self.img_path_list is not None \
                 and self.img_path_list_idx is not None \
                 and self.img_dir is not None:
-            if self.img_path_list_idx > 1:
+            if self.img_path_list_idx >= 1:
                 self.img_path_list_idx -= 1
 
                 img_anno = self.save_pic()  # 自动保存
