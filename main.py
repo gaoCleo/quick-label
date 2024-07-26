@@ -29,9 +29,10 @@ def my_log(msg: str):
 
 
 class MyMainWindows(QMainWindow, Ui_MainWindow):
-    NO_MODE = 0
+    NO_MODE = 3
     BOX_MODE = 1
     MASK_MODE = 2
+    BOTH_MODE = 0
 
     def __init__(self):
         super(MyMainWindows, self).__init__()
@@ -142,8 +143,14 @@ class MyMainWindows(QMainWindow, Ui_MainWindow):
 
     ######## btn func ###############
     def shift_mode(self):
-        self.mode = (self.mode + 1) % 3
-        if self.mode == self.NO_MODE:
+        self.mode = (self.mode + 1) % 4
+        if self.mode == self.BOTH_MODE:
+            self.btn_revise_box.setDisabled(False)
+            self.btn_add_box.setDisabled(False)
+            self.btn_revise_mask.setDisabled(False)
+            self.btn_add_mask.setDisabled(False)
+            self.btn_mode.setText(':)')
+        elif self.mode == self.NO_MODE:
             self.btn_revise_box.setDisabled(True)
             self.btn_add_box.setDisabled(True)
             self.btn_revise_mask.setDisabled(True)
