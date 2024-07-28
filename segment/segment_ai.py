@@ -34,10 +34,11 @@ class SegmentAnythingAI:
         anns = []
 
         for i, mask in enumerate(masks):
+            x1, y1, w, h = mask["bbox"]
             ann = {
                 "obj_id": obj_id,
                 "annotation": {
-                    "box": mask["bbox"],
+                    "box": [x1, y1, x1+w, y1+h],
                     "category": category
                 }
             }
